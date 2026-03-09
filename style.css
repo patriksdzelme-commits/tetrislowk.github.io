@@ -1,0 +1,81 @@
+body{
+margin:0;
+overflow:hidden;
+font-family:Arial;
+color:white;
+
+/* rainbow animated background */
+background:linear-gradient(270deg, red, orange, yellow, lime, cyan, blue, magenta);
+background-size:1400% 1400%;
+animation:rainbow 8s ease infinite;
+}
+
+@keyframes rainbow{
+0%{background-position:0% 50%}
+50%{background-position:100% 50%}
+100%{background-position:0% 50%}
+}
+
+h1{
+position:absolute;
+top:10px;
+left:10px;
+text-shadow:0 0 10px cyan,0 0 20px cyan;
+}
+
+#ui{
+position:absolute;
+top:60px;
+left:10px;
+font-size:18px;
+}
+
+#gameArea{
+display:flex;
+justify-content:center;
+margin-top:20px;
+}
+
+canvas{
+background:#050505;
+box-shadow:0 0 40px cyan;
+}
+
+#lose{
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.9);
+display:none;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+font-size:50px;
+}
+
+button{
+padding:10px 20px;
+font-size:20px;
+cursor:pointer;
+}
+
+#controls{
+position:fixed;
+bottom:10px;
+left:50%;
+transform:translateX(-50%);
+display:grid;
+grid-template-columns:80px 80px 80px;
+gap:10px;
+}
+
+.ctrl{
+font-size:25px;
+padding:15px;
+background:white;
+border:none;
+border-radius:10px;
+cursor:pointer;
+}

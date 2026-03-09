@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>ULTRA INSANE TETRIS</title>
+
+<style>
+
+body{
+margin:0;
+overflow:hidden;
+font-family:Arial;
+display:flex;
+justify-content:center;
+align-items:flex-start;
+height:100vh;
+
+background:linear-gradient(270deg,red,orange,yellow,green,cyan,blue,violet);
+background-size:1400% 1400%;
+animation:bg 10s linear infinite;
+}
+
+@keyframes bg{
+0%{background-position:0% 50%}
+50%{background-position:100% 50%}
+100%{background-position:0% 50%}
+}
+
+#gameWrap{
+margin-top:40px;
+display:flex;
+gap:30px;
+}
+
+canvas{
+background:black;
+border-radius:10px;
+box-shadow:0 0 40px cyan;
+}
+
+#side{
+color:white;
+text-align:center;
+}
+
+#scoreBox{
+font-size:26px;
+background:black;
+padding:10px;
+border-radius:8px;
+margin-bottom:20px;
+}
+
+#controls{
+position:fixed;
+bottom:10px;
+left:50%;
+transform:translateX(-50%);
+display:flex;
+gap:10px;
+}
+
+button{
+width:60px;
+height:60px;
+font-size:26px;
+border:none;
+border-radius:12px;
+cursor:pointer;
+}
+
+#lose{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:black;
+color:white;
+display:none;
+justify-content:center;
+align-items:center;
+flex-direction:column;
+font-size:60px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div id="lose">
+LOSER!!
+<button onclick="location.reload()">Restart</button>
+</div>
+
+<div id="gameWrap">
+
+<canvas id="tetris" width="240" height="400"></canvas>
+
+<div id="side">
+<div id="scoreBox">Score: <span id="score">0</span></div>
+<canvas id="next" width="120" height="120"></canvas>
+</div>
+
+</div>
+
+<div id="controls">
+<button onclick="move(-1)">◀</button>
+<button onclick="rotate()">⟳</button>
+<button onclick="move(1)">▶</button>
+<button onclick="drop()">▼</button>
+</div>
+
+<script>
+
+const canvas=document.getElementById("tetris")
+const ctx=canvas.getContext("2d")
+
+const nextCanvas=document.getElementById("next")
+const nextCtx=nextCanvas.getContext("2d")
+
+const COLS=10
+const ROWS=20
+const SIZE=20
+
+let board=[]
+let score=0
+let shake=0
+
+const colors=[
+"cyan","yellow","purple","blue","orange","green","red"
+]
+
+const pieces=[
+[[1,1,1,1]],
+[[1,1],[1,1]],
+[[0,1,0],[1,1,1]],
+[[1,0,0],[1,1,1]],
+[[0,0,1],[1,1,1]],
+[[1,1,0],[0,1,1]],
+[[0,1,1],[1,1,0]]
+]
+
+let piece
+let nextPiece
+let pos
+
+function createBoard(){
+for(let r=0;r<ROWS;r++){
+board[r]=Array(COLS).fill(0)
+}
+}
+
+function newPiece(){
+piece=nextPiece||randomPiece()
+nextPiece=randomPiece()
+
+pos={x:3,y:0}
+
+drawNext()
+
+if(collide()){
+lose()
+}
+}
+
+function randomPiece(){
+let id=Math.floor(Math.random()*pieces.length)
+return {shape:pieces[id],color:colors[id]}
+}
+
+function drawCell(x,y,color,ghost=false){
+ctx.globalAlpha=ghost?0.3:1
+ctx.fillStyle=color
+ctx.fillRect(x*SIZE,y*SIZE,SIZE,SIZE)
+ctx.strokeStyle="#111"
+ctx.strokeRect(x*SIZE,y*SIZE,SIZE,SIZE)
+ctx.globalAlpha=1
+}
+
+function draw(){
+
+ctx.setTransform(1,0,0,1,0,0)
+
+if(shake){
+ctx.translate(Math.random()*shake-shake/2,Math.random()*shake-shake/2)
+shake*=0.9
+}
+
+ctx.clearRect(0,0,canvas.width,canvas.height)
+
+for(let r=0;r<ROWS;r++){
+for(let c=0;c<COLS;c++){
+if(board[r][c]) drawCell(c,r,board[r][c])
+}
+}
+
+let ghostY=pos.y
+while(!collide(0,ghostY-pos.y+1)) ghostY++
+
+piece.shape.forEach((row,y)=>{
+row.forEach((v,x)=>{
+if(v) drawCell(x+pos.x,y+ghostY,piece.color,true)
+})
+})
+
+piece.shape.forEach((row,y)=>{
+row.forEach((v,x)=>{
+if(v) drawCell(x+pos.x,y+pos.y,piece.color)
+})
+})
+
+}
+
+function drawNext(){
+
+nextCtx.clearRect(0,0,120,120)
+
+nextPiece.shape.forEach((row,y)=>{
+row.forEach((v,x)=>{
+if(v){
+nextCtx.fillStyle=nextPiece.color
+nextCtx.fillRect(x*20+20,y*20+20,20,20)
+}
+})
+})
+
+}
+
+function collide(offsetX=0,offsetY=0){
+
+for(let y=0;y<piece.shape.length;y++){
+for(let x=0;x<piece.shape[y].length;x++){
+
+if(piece.shape[y][x]){
+
+let nx=x+pos.x+offsetX
+let ny=y+pos.y+offsetY
+
+if(nx<0||nx>=COLS||ny>=ROWS) return true
+if(board[ny]&&board[ny][nx]) return true
+
+}
+}
+}
+
+return false
+}
+
+function merge(){
+
+piece.shape.forEach((row,y)=>{
+row.forEach((v,x)=>{
+if(v){
+board[y+pos.y][x+pos.x]=piece.color
+}
+})
+})
+
+}
+
+function clearLines(){
+
+let lines=0
+
+for(let r=ROWS-1;r>=0;r--){
+if(board[r].every(v=>v)){
+board.splice(r,1)
+board.unshift(Array(COLS).fill(0))
+lines++
+}
+}
+
+if(lines){
+
+score+=lines*100
+document.getElementById("score").innerText=score
+
+explode()
+
+if(lines>=4) shake=20
+}
+
+}
+
+function explode(){
+for(let i=0;i<10;i++){
+setTimeout(()=>draw(),i*30)
+}
+}
+
+function drop(){
+
+pos.y++
+
+if(collide()){
+pos.y--
+merge()
+clearLines()
+newPiece()
+}
+
+}
+
+function move(dir){
+
+pos.x+=dir
+
+if(collide()) pos.x-=dir
+
+}
+
+function rotate(){
+
+let p=piece.shape
+piece.shape=p[0].map((_,i)=>p.map(r=>r[i]).reverse())
+
+if(collide()) piece.shape=p
+
+}
+
+document.addEventListener("keydown",e=>{
+if(e.key==="ArrowLeft") move(-1)
+if(e.key==="ArrowRight") move(1)
+if(e.key==="ArrowDown") drop()
+if(e.key==="ArrowUp") rotate()
+})
+
+function update(){
+
+drop()
+draw()
+
+}
+
+function lose(){
+
+document.getElementById("lose").style.display="flex"
+clearInterval(loop)
+
+}
+
+createBoard()
+nextPiece=randomPiece()
+newPiece()
+
+let loop=setInterval(update,600)
+
+</script>
+
+</body>
+</html>
